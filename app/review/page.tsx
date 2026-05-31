@@ -196,7 +196,7 @@ export default function ReviewPage() {
                   </span>
                   <span className="text-[11px] text-[#6C6863]">
                     {t.startTime}
-                    {t.completed && t.completedAt && ` · ${t.completedAt.slice(11, 16)} 完成`}
+                    {t.completed && t.completedAt && ` · ${new Date(t.completedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai" })} 完成`}
                   </span>
                 </div>
               ))}

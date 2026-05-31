@@ -142,7 +142,7 @@ function SortableTask({
         {/* Completion time */}
         {task.completed && task.completedAt && (
           <span className="text-[11px] text-[#6C6863] shrink-0">
-            {task.completedAt.slice(11, 16)} 完成
+            {new Date(task.completedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai" })} 完成
           </span>
         )}
       </div>
