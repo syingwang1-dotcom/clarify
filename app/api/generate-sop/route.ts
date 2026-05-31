@@ -1,10 +1,12 @@
 import OpenAI from "openai";
 import { NextRequest, NextResponse } from "next/server";
 
-const client = new OpenAI({
-  apiKey: process.env.DEEPSEEK_API_KEY,
-  baseURL: "https://api.deepseek.com",
-});
+function getClient() {
+  return new OpenAI({
+    apiKey: process.env.DEEPSEEK_API_KEY,
+    baseURL: "https://api.deepseek.com",
+  });
+}
 
 export async function POST(req: NextRequest) {
   const { rawInput, answers, energy, constraints, efficiencyProfile } = await req.json();
@@ -43,6 +45,7 @@ export async function POST(req: NextRequest) {
 澄清细节：${JSON.stringify(answers)}
 `;
 
+  const client = getClient();
   const response = await client.chat.completions.create({
     model: "deepseek-chat",
     messages: [
