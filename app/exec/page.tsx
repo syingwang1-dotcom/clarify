@@ -162,6 +162,15 @@ export default function ExecPage() {
   const [sparkText, setSparkText] = useState("");
   const [sparkSaved, setSparkSaved] = useState(false);
 
+  // Add task
+  const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const [addTaskName, setAddTaskName] = useState("");
+  const [addTaskType, setAddTaskType] = useState<TaskType>("active");
+  const [addTaskTime, setAddTaskTime] = useState(
+    new Date().toTimeString().slice(0, 5),
+  );
+  const [addTaskDuration, setAddTaskDuration] = useState(30);
+
   // Dynamic adjustment
   const [adjustOpen, setAdjustOpen] = useState(false);
   const [adjustText, setAdjustText] = useState("");
@@ -246,6 +255,25 @@ export default function ExecPage() {
     const [moved] = reordered.splice(oldIndex, 1);
     reordered.splice(newIndex, 0, moved);
     persist(reordered.map((t, i) => ({ ...t, orderIndex: i })));
+  }
+
+  // Add a manual task
+  function handleAddTask() {
+    if (!addTaskName.trim()) return;
+    const newTask: Task = {
+      id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      name: addTaskName.trim(),
+      type: addTaskType,
+      startTime: addTaskTime,
+      durationMin: addTaskDuration,
+      completed: false,
+      orderIndex: tasks.length,
+    };
+    persist([...tasks, newTask]);
+    setAddTaskName("");
+    setAddTaskType("active");
+    setAddTaskDuration(30);
+    setAddTaskOpen(false);
   }
 
   // Save spark
@@ -385,9 +413,114 @@ export default function ExecPage() {
           </DndContext>
         )}
 
+        {/* ── Add task ───────────────────────────── */}
+        {loaded && !generating && !error && total > 0 && (
+          <div className="mt-12">
+            {!addTaskOpen ? (
+              <button
+                onClick={() => setAddTaskOpen(true)}
+                className="w-full flex items-center justify-center gap-2 py-4 border border-dashed border-[#1A1A1A]/20 text-sm text-[#6C6863] cursor-pointer hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all"
+                style={{
+                  transitionDuration: "500ms",
+                  transitionTimingFunction: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                }}
+              >
+                + 添加一个任务
+              </button>
+            ) : (
+              <div className="bg-[#F9F8F6] border-t border-[#1A1A1A]/10 px-6 py-5 space-y-4">
+                <p className="text-xs uppercase tracking-[0.1em] text-[#6C6863]">
+                  新任务
+                </p>
+                <input
+                  type="text"
+                  placeholder="任务名称"
+                  value={addTaskName}
+                  onChange={(e) => setAddTaskName(e.target.value)}
+                  className="w-full bg-transparent text-sm text-[#1A1A1A] border-b border-[#1A1A1A]/10 py-2 outline-none focus:border-[#D4AF37] transition-colors"
+                  style={{
+                    transitionDuration: "500ms",
+                    transitionTimingFunction: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                  }}
+                  autoFocus
+                  onKeyDown={(e) => { if (e.key === "Enter") handleAddTask(); }}
+                />
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <p className="text-[11px] text-[#6C6863] uppercase tracking-[0.08em] mb-1">类型</p>
+                    <div className="flex gap-2">
+                      {(["communication", "deep", "recovery", "active"] as TaskType[]).map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setAddTaskType(t)}
+                          className={[
+                            "text-[11px] px-3 py-1 uppercase tracking-[0.08em] border transition-all cursor-pointer",
+                            addTaskType === t
+                              ? "border-[#1A1A1A] text-[#1A1A1A]"
+                              : "border-transparent text-[#6C6863] hover:text-[#1A1A1A]",
+                          ].join(" ")}
+                          style={{
+                            transitionDuration: "500ms",
+                            transitionTimingFunction: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                          }}
+                        >
+                          {typeLabels[t]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="w-24">
+                    <p className="text-[11px] text-[#6C6863] uppercase tracking-[0.08em] mb-1">时间</p>
+                    <input
+                      type="time"
+                      value={addTaskTime}
+                      onChange={(e) => setAddTaskTime(e.target.value)}
+                      className="w-full bg-transparent text-sm text-[#1A1A1A] border-b border-[#1A1A1A]/10 py-1 outline-none focus:border-[#D4AF37] transition-colors"
+                      style={{
+                        transitionDuration: "500ms",
+                        transitionTimingFunction: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                      }}
+                    />
+                  </div>
+                  <div className="w-20">
+                    <p className="text-[11px] text-[#6C6863] uppercase tracking-[0.08em] mb-1">时长</p>
+                    <input
+                      type="number"
+                      min={5}
+                      max={480}
+                      value={addTaskDuration}
+                      onChange={(e) => setAddTaskDuration(Number(e.target.value))}
+                      className="w-full bg-transparent text-sm text-[#1A1A1A] border-b border-[#1A1A1A]/10 py-1 outline-none focus:border-[#D4AF37] transition-colors"
+                      style={{
+                        transitionDuration: "500ms",
+                        transitionTimingFunction: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => { setAddTaskOpen(false); setAddTaskName(""); }}
+                    className="text-xs text-[#6C6863] cursor-pointer hover:text-[#1A1A1A] transition-all"
+                    style={{
+                      transitionDuration: "500ms",
+                      transitionTimingFunction: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                    }}
+                  >
+                    取消
+                  </button>
+                  <Button variant="primary" onClick={handleAddTask} disabled={!addTaskName.trim()}>
+                    添加 →
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ── Dynamic adjustment ──────────────────── */}
         {loaded && !generating && !error && total > 0 && (
-          <div className="mt-16">
+          <div className="mt-12">
             <button
               onClick={() => setAdjustOpen(!adjustOpen)}
               className="text-xs uppercase tracking-[0.1em] text-[#6C6863] cursor-pointer hover:text-[#1A1A1A] transition-all"
