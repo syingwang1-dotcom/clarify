@@ -9,6 +9,10 @@ export interface Task {
   completed: boolean;
   completedAt?: string;
   orderIndex: number;
+  // Actual time tracking
+  actualStart?: string;        // user-reported start time "09:30"
+  actualEnd?: string;          // user-reported end time "10:15"
+  actualDurationMin?: number;  // auto-calculated from actualStart/actualEnd
 }
 
 export interface Spark {

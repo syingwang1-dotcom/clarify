@@ -196,7 +196,11 @@ export default function ReviewPage() {
                   </span>
                   <span className="text-[11px] text-[#6C6863]">
                     {t.startTime}
-                    {t.completed && t.completedAt && ` · ${new Date(t.completedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai" })} 完成`}
+                    {t.completed && (
+                      t.actualDurationMin != null
+                        ? ` · 实际 ${t.actualStart}-${t.actualEnd} (${t.actualDurationMin}min)`
+                        : t.completedAt && ` · ${new Date(t.completedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai" })} 完成（按计划）`
+                    )}
                   </span>
                 </div>
               ))}

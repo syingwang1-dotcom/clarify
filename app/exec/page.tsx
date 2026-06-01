@@ -36,13 +36,40 @@ function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function currentBeijingTime(): string {
+  const now = new Date();
+  const h = (now.getUTCHours() + 8) % 24;
+  const m = now.getMinutes();
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function calcActualDuration(start: string, end: string): number {
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  return Math.max(1, (eh * 60 + em) - (sh * 60 + sm));
+}
+
 // ── Sortable task item ─────────────────────────────
 function SortableTask({
   task,
-  onToggle,
+  onCheckClick,
+  isConfirming,
+  confirmStart,
+  confirmEnd,
+  onConfirmStartChange,
+  onConfirmEndChange,
+  onRecord,
+  onSkip,
 }: {
   task: Task;
-  onToggle: () => void;
+  onCheckClick: () => void;
+  isConfirming: boolean;
+  confirmStart: string;
+  confirmEnd: string;
+  onConfirmStartChange: (v: string) => void;
+  onConfirmEndChange: (v: string) => void;
+  onRecord: () => void;
+  onSkip: () => void;
 }) {
   const {
     attributes,
@@ -74,13 +101,14 @@ function SortableTask({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onToggle();
+            onCheckClick();
           }}
           className={[
-            "w-5 h-5 flex items-center justify-center border transition-all shrink-0",
+            "w-5 h-5 flex items-center justify-center border transition-all shrink-0 relative",
             task.completed
               ? "bg-[#1A1A1A] border-[#1A1A1A]"
               : "border-[#1A1A1A] bg-transparent",
+            isConfirming ? "ring-1 ring-[#D4AF37]" : "",
           ].join(" ")}
           style={{
             transitionDuration: "500ms",
@@ -139,13 +167,99 @@ function SortableTask({
           {typeLabels[task.type]}
         </span>
 
-        {/* Completion time */}
-        {task.completed && task.completedAt && (
+        {/* Completion info: actual times or completedAt */}
+        {task.completed && (
           <span className="text-[11px] text-[#6C6863] shrink-0">
-            {new Date(task.completedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai" })} 完成
+            {task.actualStart && task.actualEnd
+              ? `${task.actualStart}-${task.actualEnd} (${task.actualDurationMin}min)`
+              : task.completedAt
+                ? `${new Date(task.completedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai" })} 完成`
+                : ""
+            }
           </span>
         )}
       </div>
+
+      {/* ── Inline time confirm area ── */}
+      {isConfirming && !task.completed && (
+        <div className="mt-4 pt-4 border-t border-[#1A1A1A]/10 space-y-3 animate-fade-in">
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <p className="text-[11px] text-[#6C6863] uppercase tracking-[0.08em] mb-1">
+                实际开始
+              </p>
+              <input
+                type="time"
+                value={confirmStart}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onConfirmStartChange(e.target.value);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter") onRecord();
+                }}
+                className="w-full bg-transparent text-sm text-[#1A1A1A] border-b border-[#1A1A1A]/10 py-1 outline-none focus:border-[#D4AF37] transition-colors"
+                style={{
+                  transitionDuration: "500ms",
+                  transitionTimingFunction:
+                    "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                }}
+              />
+            </div>
+            <div className="flex-1">
+              <p className="text-[11px] text-[#6C6863] uppercase tracking-[0.08em] mb-1">
+                实际完成
+              </p>
+              <input
+                type="time"
+                value={confirmEnd}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onConfirmEndChange(e.target.value);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.key === "Enter") onRecord();
+                }}
+                className="w-full bg-transparent text-sm text-[#1A1A1A] border-b border-[#1A1A1A]/10 py-1 outline-none focus:border-[#D4AF37] transition-colors"
+                style={{
+                  transitionDuration: "500ms",
+                  transitionTimingFunction:
+                    "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+                }}
+              />
+            </div>
+          </div>
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onSkip();
+              }}
+              className="text-xs text-[#6C6863] cursor-pointer hover:text-[#1A1A1A] transition-all"
+              style={{
+                transitionDuration: "500ms",
+                transitionTimingFunction:
+                  "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+              }}
+            >
+              跳过
+            </button>
+            <Button
+              variant="primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRecord();
+              }}
+            >
+              记录完成 →
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -176,6 +290,11 @@ export default function ExecPage() {
   const [adjustText, setAdjustText] = useState("");
   const [replanning, setReplanning] = useState(false);
   const [replanError, setReplanError] = useState<string | null>(null);
+
+  // Actual time confirmation
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [confirmStart, setConfirmStart] = useState("");
+  const [confirmEnd, setConfirmEnd] = useState("");
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -231,15 +350,62 @@ export default function ExecPage() {
     [],
   );
 
-  // Toggle checkbox — record actual completion time
-  function handleToggle(id: string) {
+  // Toggle checkbox — expand inline time input first, then confirm or skip
+  function handleCheckClick(id: string) {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+
+    // Clicking the same task while confirming → cancel
+    if (confirmingId === id) {
+      setConfirmingId(null);
+      return;
+    }
+
+    // Already completed → unmark
+    if (task.completed) {
+      const updated = tasks.map((t) =>
+        t.id === id
+          ? { ...t, completed: false, completedAt: undefined }
+          : t,
+      );
+      persist(updated);
+      return;
+    }
+
+    // Open confirm area, pre-fill with planned start + current time
+    setConfirmingId(id);
+    setConfirmStart(task.startTime);
+    setConfirmEnd(currentBeijingTime());
+  }
+
+  function handleRecord(id: string) {
+    const duration = calcActualDuration(confirmStart, confirmEnd);
     const now = new Date().toISOString();
     const updated = tasks.map((t) =>
       t.id === id
-        ? { ...t, completed: !t.completed, completedAt: t.completed ? undefined : now }
+        ? {
+            ...t,
+            completed: true,
+            completedAt: now,
+            actualStart: confirmStart,
+            actualEnd: confirmEnd,
+            actualDurationMin: duration,
+          }
         : t,
     );
     persist(updated);
+    setConfirmingId(null);
+  }
+
+  function handleSkip(id: string) {
+    const now = new Date().toISOString();
+    const updated = tasks.map((t) =>
+      t.id === id
+        ? { ...t, completed: true, completedAt: now }
+        : t,
+    );
+    persist(updated);
+    setConfirmingId(null);
   }
 
   // Drag end
@@ -250,6 +416,9 @@ export default function ExecPage() {
     const oldIndex = tasks.findIndex((t) => t.id === active.id);
     const newIndex = tasks.findIndex((t) => t.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
+
+    // Cancel any open confirm area
+    setConfirmingId(null);
 
     const reordered = [...tasks];
     const [moved] = reordered.splice(oldIndex, 1);
@@ -290,6 +459,7 @@ export default function ExecPage() {
     if (!adjustText.trim()) return;
     setReplanning(true);
     setReplanError(null);
+    setConfirmingId(null);
 
     const ctx = getDailyContext(todayKey());
 
@@ -406,7 +576,14 @@ export default function ExecPage() {
                 <SortableTask
                   key={task.id}
                   task={task}
-                  onToggle={() => handleToggle(task.id)}
+                  onCheckClick={() => handleCheckClick(task.id)}
+                  isConfirming={confirmingId === task.id}
+                  confirmStart={confirmStart}
+                  confirmEnd={confirmEnd}
+                  onConfirmStartChange={setConfirmStart}
+                  onConfirmEndChange={setConfirmEnd}
+                  onRecord={() => handleRecord(task.id)}
+                  onSkip={() => handleSkip(task.id)}
                 />
               ))}
             </SortableContext>
