@@ -20,7 +20,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { NavHeader } from "@/components/NavHeader";
 import { Button } from "@/components/ui/Button";
 import { Textarea } from "@/components/ui/Input";
-import { getTasks, saveTasks, saveSpark, getDailyContext } from "@/lib/storage";
+import { getTasks, saveTasks, saveSpark, getDailyContext, savePlanChange } from "@/lib/storage";
 import { getEfficiencyProfile } from "@/lib/efficiency";
 import type { Task, TaskType } from "@/lib/types";
 
@@ -470,6 +470,7 @@ export default function ExecPage() {
       const data = await res.json();
       if (!data.tasks) throw new Error("无效响应");
       persist(data.tasks);
+      savePlanChange(todayKey(), adjustText.trim());
       setAdjustOpen(false);
       setAdjustText("");
     } catch {

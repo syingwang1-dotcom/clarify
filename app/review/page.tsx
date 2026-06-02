@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { NavHeader } from "@/components/NavHeader";
 import { Card } from "@/components/ui/Card";
-import { getTasks, getSparks, getDailyContext } from "@/lib/storage";
+import { getTasks, getSparks, getDailyContext, getPlanChanges } from "@/lib/storage";
 import { getEfficiencyCards, type EfficiencyCard } from "@/lib/efficiency";
-import type { Task, Spark, DailyContext } from "@/lib/types";
+import type { Task, Spark, DailyContext, PlanChange } from "@/lib/types";
 
 // ── Helpers ────────────────────────────────────────
 const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
@@ -49,6 +49,7 @@ export default function ReviewPage() {
   const [sparks, setSparks] = useState<Spark[]>([]);
   const [ctx, setCtx] = useState<DailyContext | null>(null);
   const [cards, setCards] = useState<EfficiencyCard[]>([]);
+  const [planChanges, setPlanChanges] = useState<PlanChange[]>([]);
   const [mounted, setMounted] = useState(false);
 
   // Read ?date= from URL on mount
@@ -74,6 +75,7 @@ export default function ReviewPage() {
     setTasks(getTasks(date));
     setSparks(getSparks(date));
     setCtx(getDailyContext(date));
+    setPlanChanges(getPlanChanges(date));
   }, []);
 
   // Load efficiency cards (global, not date-specific)
@@ -258,6 +260,27 @@ export default function ReviewPage() {
                 积累更多数据后将展示效率分析
               </p>
             </Card>
+          </div>
+        )}
+
+        {/* ── Plan changes ──────────────────────────── */}
+        {planChanges.length > 0 && (
+          <div className="mb-16">
+            <p className="text-xs uppercase tracking-[0.1em] text-[#6C6863] mb-4">
+              计划变动
+            </p>
+            <div className="space-y-3">
+              {planChanges.map((pc) => (
+                <Card key={pc.id}>
+                  <p className="text-sm text-[#1A1A1A] leading-relaxed mb-2">
+                    {pc.text}
+                  </p>
+                  <div className="flex items-center gap-3 text-[11px] text-[#6C6863]">
+                    <span>{new Date(pc.createdAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" })}</span>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
         )}
 

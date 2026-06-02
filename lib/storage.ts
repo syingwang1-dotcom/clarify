@@ -1,4 +1,4 @@
-import type { Task, Spark, DailyContext } from "./types";
+import type { Task, Spark, DailyContext, PlanChange } from "./types";
 
 function item<T>(key: string): T | null {
   if (typeof window === "undefined") return null;
@@ -48,4 +48,20 @@ export function getDailyContext(date: string): DailyContext | null {
 
 export function saveDailyContext(date: string, context: DailyContext): void {
   setItem(`clarify_context_${date}`, context);
+}
+
+// ── Plan changes ──────────────────────────────────
+export function getPlanChanges(date: string): PlanChange[] {
+  return item<PlanChange[]>(`clarify_planchanges_${date}`) ?? [];
+}
+
+export function savePlanChange(date: string, text: string): void {
+  const changes = getPlanChanges(date);
+  const change: PlanChange = {
+    id: crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    text,
+    createdAt: new Date().toISOString(),
+  };
+  changes.push(change);
+  setItem(`clarify_planchanges_${date}`, changes);
 }

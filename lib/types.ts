@@ -30,6 +30,12 @@ export interface DailyContext {
   aiSummary?: string;
 }
 
+export interface PlanChange {
+  id: string;
+  text: string;
+  createdAt: string;
+}
+
 // ── AI clarify response ───────────────────────────
 export interface AIQuestion {
   taskName: string;
