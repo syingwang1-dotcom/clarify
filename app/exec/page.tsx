@@ -152,9 +152,14 @@ function SortableTask({
           {task.name}
         </span>
 
-        {/* Time / duration */}
+        {/* Time / duration + completion info */}
         <span className="text-[11px] text-[#6C6863] tracking-wide shrink-0">
-          {task.startTime} · {task.durationMin}min
+          {task.completed && task.actualStart && task.actualEnd
+            ? `${task.startTime} · ${task.durationMin}min · ${task.actualStart}-${task.actualEnd} (${task.actualDurationMin}min)`
+            : task.completed && task.completedAt
+              ? `${task.startTime} · ${task.durationMin}min · ${new Date(task.completedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai" })} 完成`
+              : `${task.startTime} · ${task.durationMin}min`
+          }
         </span>
 
         {/* Type tag */}
@@ -166,18 +171,6 @@ function SortableTask({
         >
           {typeLabels[task.type]}
         </span>
-
-        {/* Completion info: actual times or completedAt */}
-        {task.completed && (
-          <span className="text-[11px] text-[#6C6863] shrink-0">
-            {task.actualStart && task.actualEnd
-              ? `${task.actualStart}-${task.actualEnd} (${task.actualDurationMin}min)`
-              : task.completedAt
-                ? `${new Date(task.completedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai" })} 完成`
-                : ""
-            }
-          </span>
-        )}
       </div>
 
       {/* ── Inline time confirm area ── */}
