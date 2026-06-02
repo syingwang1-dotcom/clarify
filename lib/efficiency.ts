@@ -181,17 +181,6 @@ export function getEfficiencyCards(): EfficiencyCard[] {
     detail: "完成率最高的时间段",
   });
 
-  // Most postponed type
-  if (stats.mostPostponedType) {
-    const typeData = stats.byType[stats.mostPostponedType];
-    const rate = typeData ? Math.round((typeData.completed / typeData.planned) * 100) : 0;
-    cards.push({
-      title: "需关注",
-      value: `${typeLabel(stats.mostPostponedType)} ${rate}%`,
-      detail: "完成率最低的任务类型",
-    });
-  }
-
   // Energy match
   if (stats.byEnergy["high"]) {
     const high = stats.byEnergy["high"];
